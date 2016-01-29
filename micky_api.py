@@ -2,6 +2,7 @@
 __author__ = 'mattijn'
 import requests
 import utils
+from tokens import sleutel_micky
 from datetime import date
 class MattijnError(Exception):
     """
@@ -32,7 +33,7 @@ class ScoutingGroep(dict):
 
 class MickyApi:
     def __init__(self):
-        self.base_url = 'http://jotihunt-api.area348.nl'
+        self.base_url = 'http://jotihunt-api.area348.nl' + sleutel_micky
         self.teams = ['a', 'b', 'c', 'd', 'e', 'f', 'x']
 
     def send_hunter_coord(self, *, gebruiker=None, latitude=None, longitude=None, hunter=None):
