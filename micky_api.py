@@ -33,14 +33,14 @@ class ScoutingGroep(dict):
 
 class MickyApi:
     def __init__(self):
-        self.base_url = 'http://jotihunt-api.area348.nl/' 
+        self.base_url = 'http://jotihunt-api.area348.nl/{call}/' + sleutel_micky
         self.teams = ['a', 'b', 'c', 'd', 'e', 'f', 'x']
 
     def send_hunter_coord(self, *, gebruiker=None, latitude=None, longitude=None, hunter=None):
         raise NotImplementedError()  # TODO implement this
 
     def get_hunter_namen(self):
-        url = self.base_url + sleutel_micky + '/hunter/gebruiker'
+        url = (self.base_url +'/gebruiker').format(call='hunter')
         try:
             r = requests.get(url)
             return r.json()
@@ -52,7 +52,7 @@ class MickyApi:
             raise MattijnError(42001, 'empty user')
         if type(gebruiker) != str:
             raise MattijnError(42002, 'username is no str')
-        url = self.base_url + sleutel_micky + '/hunter/gebruiker/tail/' + gebruiker
+        url = (self.base_url + '/gebruiker/tail/' + gebruiker).format(call='hunter')
         # if int(r.status_code) != 200 or int(r.status_code) != 201:
         #     raise MattijnError(42003, r.status_code, "waarschijnlijk geen bestaande data ingevoerd")
         try:
@@ -62,7 +62,7 @@ class MickyApi:
             return {gebruiker: []}
 
     def get_alle_hunters(self):
-        url = self.base_url + sleutel_micky + '/hunter/all'
+        url = self.base_url + '/all').format(call='hunter')
         try:
             r = requests.get(url)
             return r.json()
@@ -76,7 +76,7 @@ class MickyApi:
     def get_last_vos(self, team):
         if team not in self.teams:
             raise MattijnError(42004, 'Team is geen team', team)
-        url = self.base_url + sleutel_micky + '/vos/' + team + '/last'
+        url = (self.base_url + '/' + team + '/last').format(call='vos')
         try:
             r = requests.get(url)
             return r.json()
@@ -95,7 +95,7 @@ class MickyApi:
             raise MattijnError(42004, 'Team is geen team', team)
         if type(id) != int:
             raise MattijnError(42005, 'id is not an int')
-        url = self.base_url + sleutel_micky + '/vos/' + team + '/' + str(id)
+        url = (self.base_url + '/' + team + '/' + str(id)).format(call='vos')
         try:
             r = requests.get(url)
             print(r.status_code + '/' + type(r.status_code))
@@ -113,7 +113,7 @@ class MickyApi:
     def get_all_vos(self, team):
         if team not in self.teams:
             raise MattijnError(42004, 'Team is geen team', team)
-        url = self.base_url + sleutel_micky + '/vos/' + team
+        url = (self.base_url + '/' + team).format(call='vos')
         try:
             r = requests.get(url)
             return r.json()
@@ -121,7 +121,7 @@ class MickyApi:
             return []
 
     def get_all_scouting_groepen(self):
-        url = self.base_url + sleutel_micky + '/sc/all'
+        url = (self.base_url + '/all').format(call='sc')
         try:
             r = requests.get(url)
             return r.json()
@@ -131,7 +131,7 @@ class MickyApi:
     def get_scouting_groep(self, id):
         if type(id) != int:
             raise MattijnError(42005, 'id is not an int')
-        url = self.base_url + sleutel_micky + '/sc/all/' + str(id)
+        url = (self.base_url + '/all/' + str(id)).format(call='sc')
         try:
             r = requests.get(url)
             return r.json()
@@ -143,7 +143,7 @@ class MickyApi:
                     "naam": "ERROR" + str(r.status_code)}
 
     def get_meta(self):
-        url = self.base_url + sleutel_micky + '/meta'
+        url = self.base_url.format(call='meta')
         try:
             r = requests.get(url)
             return r.json()
