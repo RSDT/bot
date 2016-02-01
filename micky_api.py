@@ -62,7 +62,7 @@ class MickyApi:
             return {gebruiker: []}
 
     def get_alle_hunters(self):
-        url = self.base_url + '/all').format(call='hunter')
+        url = (self.base_url + '/all').format(call='hunter')
         try:
             r = requests.get(url)
             return r.json()

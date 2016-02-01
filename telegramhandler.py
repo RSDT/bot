@@ -1,5 +1,4 @@
 from datetime import datetime
-import pytz
 import tokens
 from utils import logger, one_of_in
 import telegram
@@ -16,8 +15,8 @@ import command_handler
 import logging
 import subprocess
 from collections import namedtuple
-StatusRecords = namedtuple('StatusRecords', ['aantal_keer_rood','aantal_keer_oranje','aantal_keer_groen',
-                             'deelgebied','huidige_status','laatste_keer_verandering','eerst_status'])
+StatusRecords = namedtuple('StatusRecords', ['aantal_keer_rood', 'aantal_keer_oranje', 'aantal_keer_groen',
+                             'deelgebied', 'huidige_status','laatste_keer_verandering', 'eerst_status'])
 status_records = {}
 __author__ = 'mattijn'
 FORMAT = '%(asctime)-15s %(message)s'
