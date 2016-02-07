@@ -15,6 +15,8 @@ import command_handler
 import logging
 import subprocess
 from collections import namedtuple
+import functools
+import botan
 StatusRecords = namedtuple('StatusRecords', ['aantal_keer_rood', 'aantal_keer_oranje', 'aantal_keer_groen',
                              'deelgebied', 'huidige_status','laatste_keer_verandering', 'eerst_status'])
 status_records = {}
@@ -106,7 +108,6 @@ def update_status_records():
         return False
 
 
-
 class Chat(object):
     def __init__(self, bot, chat_id):
         self.chat_id = chat_id
@@ -151,6 +152,7 @@ class ScanUpdates:
                     self.jh_bot.bot.sendPhoto(self.chat_id, status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['file_id'])
                 if status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['type'] == 'sticker':
                     self.jh_bot.bot.sendSticker(self.chat_id, status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['file_id'])
+
 
 class HBUpdates(ScanUpdates):
     def __init__(self, jh_bot, chat_id, deelgebied):
@@ -315,8 +317,7 @@ def convert_tijden(waarde, eenheid='seconden'):
         return convert_tijden(waarde * 60, 'minuten')
     if eenheid in ['dagen', 'd', 'days', 'dag', 'day']:
         return convert_tijden(waarde * 24, 'uur')
-import functools
-import botan
+
 
 
 def command_botan_wrapper(func):

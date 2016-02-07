@@ -1,6 +1,6 @@
-auth_token = None
-admins = None
-telegramtoken = None
-botankey = None
-sleutel_micky = None
-phpsessid = '2cbrj9u1gv89vut981ke9g6r16'
+auth_token = '133119148:AAGeMc1E7TG-UZ8O995k9-wjr8OJWT3wHxE'
+admins = {'njittam'}
+telegramtoken = '133119148:AAGeMc1E7TG-UZ8O995k9-wjr8OJWT3wHxE'
+botankey = 3
+sleutel_micky = '133119148:AAGeMc1E7TG-UZ8O995k9-wjr8OJWT3wHxE'
+phpsessid = 'her1f3f6fm32tv61j4ajci8s14'

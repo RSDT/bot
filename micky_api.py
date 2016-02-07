@@ -33,7 +33,7 @@ class ScoutingGroep(dict):
 
 class MickyApi:
     def __init__(self):
-        self.base_url = 'http://jotihunt-api.area348.nl/{call}/' + sleutel_micky
+        self.base_url = 'http://jotihunt-api.area348.nl/{call}/' + str(sleutel_micky)
         self.teams = ['a', 'b', 'c', 'd', 'e', 'f', 'x']
 
     def send_hunter_coord(self, *, gebruiker=None, latitude=None, longitude=None, hunter=None):

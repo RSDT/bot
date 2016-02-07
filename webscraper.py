@@ -98,3 +98,13 @@ def to_dict(table, collumns, identifier):
             temp[collumns[i]] = x
         d[temp[identifier]] = temp
     return d
+
+def print_table(table):
+    print('[')
+    try:
+        for key in table.keys():
+            print('\t'+str(table[key]))
+    except AttributeError:
+        for row in table:
+            print('\t' + str(row))
+    print(']')
