@@ -1,4 +1,6 @@
 from datetime import datetime
+
+import jotihuntScraper
 import tokens
 from utils import logger, one_of_in
 import telegram
@@ -17,8 +19,10 @@ import subprocess
 from collections import namedtuple
 import functools
 import botan
+
 StatusRecords = namedtuple('StatusRecords', ['aantal_keer_rood', 'aantal_keer_oranje', 'aantal_keer_groen',
-                             'deelgebied', 'huidige_status','laatste_keer_verandering', 'eerst_status'])
+                                             'deelgebied', 'huidige_status', 'laatste_keer_verandering',
+                                             'eerst_status'])
 status_records = {}
 __author__ = 'mattijn'
 FORMAT = '%(asctime)-15s %(message)s'
@@ -36,16 +40,33 @@ admins = tokens.admins
 admins_only = True
 RP_addme_groepschat = None
 known_users = []
-
 update_list = []
-status_plaatjes = {'a': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADOAADxPsqAXmyBBClXTd4Ag'}, 'rood': {'type': 'sticker', 'file_id': 'BQADBAADNAADxPsqAWy_jDGSfM8VAg'}, 'oranje': {'type': 'sticker', 'file_id': 'BQADBAADNgADxPsqAW5L5FGEVeZsAg'}}, 'c': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTAADxPsqAYLV3juZLpBdAg'}, 'rood': {'type': 'sticker', 'file_id': 'BQADBAADSgADxPsqAT-u5My8rm3gAg'}, 'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRgADxPsqAQV4dBO6m83XAg'}}, 'b': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADQAADxPsqAe0nAoB-ZMyOAg'}, 'rood': {'type': 'sticker', 'file_id': 'BQADBAADQgADxPsqAYIFsuIiE6hzAg'}, 'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRAADxPsqAWxDH1LIGSXKAg'}}, 'e': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADWgADxPsqAUL07wYDRvidAg'}, 'rood': {'type': 'sticker', 'file_id': 'BQADBAADVAADxPsqAQsjZhRr4lEnAg'}, 'oranje': {'type': 'sticker', 'file_id': 'BQADBAADWAADxPsqATm-pA-vdphAAg'}}, 'd': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTgADxPsqAZx6xRcZie8dAg'}, 'rood': {'type': 'sticker', 'file_id': 'BQADBAADUgADxPsqAb2HyQa_q_n8Ag'}, 'oranje': {'type': 'sticker', 'file_id': 'BQADBAADUAADxPsqAQmw5iS__C7yAg'}}, 'f': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'}, 'rood': {'type': 'sticker', 'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'}, 'oranje': {'type': 'sticker', 'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'}}}
+status_plaatjes = {'a': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADOAADxPsqAXmyBBClXTd4Ag'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADNAADxPsqAWy_jDGSfM8VAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADNgADxPsqAW5L5FGEVeZsAg'}},
+                   'c': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTAADxPsqAYLV3juZLpBdAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADSgADxPsqAT-u5My8rm3gAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRgADxPsqAQV4dBO6m83XAg'}},
+                   'b': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADQAADxPsqAe0nAoB-ZMyOAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADQgADxPsqAYIFsuIiE6hzAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADRAADxPsqAWxDH1LIGSXKAg'}},
+                   'e': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADWgADxPsqAUL07wYDRvidAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADVAADxPsqAQsjZhRr4lEnAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADWAADxPsqATm-pA-vdphAAg'}},
+                   'd': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADTgADxPsqAZx6xRcZie8dAg'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADUgADxPsqAb2HyQa_q_n8Ag'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADUAADxPsqAQmw5iS__C7yAg'}},
+                   'f': {'groen': {'type': 'sticker', 'file_id': 'BQADBAADXgADxPsqATT7K_u22oL7Ag'},
+                         'rood': {'type': 'sticker', 'file_id': 'BQADBAADXAADxPsqAYLGQPHFp1xLAg'},
+                         'oranje': {'type': 'sticker', 'file_id': 'BQADBAADVgADxPsqAffXkv_Pldg-Ag'}}}
+
 
 def update_status_records():
     try:
         try:
             r = requests.get('http://jotihunt.net/api/1.0/vossen')
         except:
-            mockresponse=namedtuple('mockresponse',['status_code'])
+            mockresponse = namedtuple('mockresponse', ['status_code'])
             r = mockresponse(status_code=404)
             r.status_code = 404
             return False
@@ -58,7 +79,7 @@ def update_status_records():
                 data[get_deelgebied(dgb['team'].lower())] = dgb['status']
         twaalf_uur_geweest = False
         global status_records
-        for k,v in status_records.items():
+        for k, v in status_records.items():
             dt_laatste = datetime.fromtimestamp(v.laatste_keer_verandering)
             dt_nu = datetime.fromtimestamp(time.time())
             if dt_nu.day != dt_laatste.day:
@@ -69,38 +90,38 @@ def update_status_records():
             status_record = None
             if k not in status_records.keys():
                 status_record = StatusRecords(aantal_keer_rood=int(v == 'rood'),
-                                          aantal_keer_oranje=int(v == 'oranje'),
-                                          aantal_keer_groen=int(v == 'groen'),
-                                          deelgebied=k,
-                                          huidige_status=v,
-                                          laatste_keer_verandering=time.time(),
-                                          eerst_status=v)
+                                              aantal_keer_oranje=int(v == 'oranje'),
+                                              aantal_keer_groen=int(v == 'groen'),
+                                              deelgebied=k,
+                                              huidige_status=v,
+                                              laatste_keer_verandering=time.time(),
+                                              eerst_status=v)
             elif status_records[k].huidige_status != v:
                 oude_status_record = status_records[k]
                 if v == 'groen':
                     status_record = StatusRecords(aantal_keer_rood=oude_status_record.aantal_keer_rood,
-                                              aantal_keer_oranje=oude_status_record.aantal_keer_oranje,
-                                              aantal_keer_groen=oude_status_record.aantal_keer_groen + 1,
-                                              deelgebied=k,
-                                              huidige_status=v,
-                                              laatste_keer_verandering=time.time(),
-                                              eerst_status=oude_status_record.eerst_status)
+                                                  aantal_keer_oranje=oude_status_record.aantal_keer_oranje,
+                                                  aantal_keer_groen=oude_status_record.aantal_keer_groen + 1,
+                                                  deelgebied=k,
+                                                  huidige_status=v,
+                                                  laatste_keer_verandering=time.time(),
+                                                  eerst_status=oude_status_record.eerst_status)
                 if v == 'oranje':
                     status_record = StatusRecords(aantal_keer_rood=oude_status_record.aantal_keer_rood,
-                                              aantal_keer_oranje=oude_status_record.aantal_keer_oranje + 1,
-                                              aantal_keer_groen=oude_status_record.aantal_keer_groen,
-                                              deelgebied=k,
-                                              huidige_status=v,
-                                              laatste_keer_verandering=time.time(),
-                                              eerst_status=oude_status_record.eerst_status)
+                                                  aantal_keer_oranje=oude_status_record.aantal_keer_oranje + 1,
+                                                  aantal_keer_groen=oude_status_record.aantal_keer_groen,
+                                                  deelgebied=k,
+                                                  huidige_status=v,
+                                                  laatste_keer_verandering=time.time(),
+                                                  eerst_status=oude_status_record.eerst_status)
                 if v == 'rood':
                     status_record = StatusRecords(aantal_keer_rood=oude_status_record.aantal_keer_rood + 1,
-                                              aantal_keer_oranje=oude_status_record.aantal_keer_oranje,
-                                              aantal_keer_groen=oude_status_record.aantal_keer_groen,
-                                              deelgebied=k,
-                                              huidige_status=v,
-                                              laatste_keer_verandering=time.time(),
-                                              eerst_status=oude_status_record.eerst_status)
+                                                  aantal_keer_oranje=oude_status_record.aantal_keer_oranje,
+                                                  aantal_keer_groen=oude_status_record.aantal_keer_groen,
+                                                  deelgebied=k,
+                                                  huidige_status=v,
+                                                  laatste_keer_verandering=time.time(),
+                                                  eerst_status=oude_status_record.eerst_status)
             if status_record is not None:
                 status_records[k] = status_record
         return True
@@ -135,23 +156,28 @@ class ScanUpdates:
             temp = self.micky_api.get_last_vos(team)
             if temp != self.last_update_micky:
                 self.jh_bot.bot.sendMessage(self.chat_id, "Er is een nieuwe hint voor " + self.deelgebied
-                                                + " ingevoerd.\n" + 'Dit is een hint van ' + str(temp['datetime'][11:]))  # TODO moet dit naar x minuten geleden?
+                                            + " ingevoerd.\n" + 'Dit is een hint van ' + str(
+                    temp['datetime'][11:]))  # TODO moet dit naar x minuten geleden?
                 self.jh_bot.bot.sendLocation(self.chat_id, latitude=float(temp['latitude']),
-                                                 longitude=float(temp['longitude']))
+                                             longitude=float(temp['longitude']))
                 self.jh_bot.bot.sendMessage(self.chat_id,
                                             'zie deze hint op de kaart: ' + map_url + '?' + 'gebied=' +
-                                                self.deelgebied[0].upper())
+                                            self.deelgebied[0].upper())
                 self.last_update_micky = temp
             self.status.update()
             for deelgebied in [d for d in self.status.get_updated() if d == self.deelgebied[0].lower()]:
                 self.jh_bot.bot.sendMessage(self.chat_id, 'Er is een status-update voor ' +
-                                            get_deelgebied(deelgebied[0].upper())+'.\n' +
+                                            get_deelgebied(deelgebied[0].upper()) + '.\n' +
                                             'de nieuwe status voor ' + get_deelgebied(deelgebied[0].upper()) + ' = ' +
                                             self.status[deelgebied])
                 if status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['type'] == 'photo':
-                    self.jh_bot.bot.sendPhoto(self.chat_id, status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['file_id'])
+                    self.jh_bot.bot.sendPhoto(self.chat_id,
+                                              status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()][
+                                                  'file_id'])
                 if status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['type'] == 'sticker':
-                    self.jh_bot.bot.sendSticker(self.chat_id, status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()]['file_id'])
+                    self.jh_bot.bot.sendSticker(self.chat_id,
+                                                status_plaatjes[deelgebied[0].lower()][self.status[deelgebied].lower()][
+                                                    'file_id'])
 
 
 class HBUpdates(ScanUpdates):
@@ -165,16 +191,38 @@ class HBUpdates(ScanUpdates):
         self.nieuws = []
         self.errors = {'opdrachten': None, 'hints': None, 'nieuws': None}
 
+    def update_opdracht_klaar(self):
+        opdrachten, labels, pref_label = jotihuntScraper.get_opdrachten()
+        for opdracht in opdrachten:
+            opdrachten2 = [o for o in self.opdrachten if opdracht[1] == o.titel]
+            if len(opdrachten2) == 1:
+                if opdrachten2[0].gekregen_punten == None:
+                    if opdracht[2] != None:
+                        opdrachten2[0].aantal_punten = opdracht[2]
+                        self.jh_bot.bot.sendMessage(self.chat_id, 'We hebben '+ str(opdrachten2[0].aantal_punten) +
+                                                    'van de ' + opdrachten2[0].max_punten +
+                                                    'punten gekregen voor de opdracht met de titel: [' +
+                                                    opdrachten2[0].titel + ']' + '(http://jotihunt.net/bericht/?MID=' +
+                                                    opdrachten2[0].id + ')' + '\n de inlevertijd was: ' +
+                                                    str(opdrachten2[0].ingeleverd),
+                                                    parse_mode=telegram.ParseMode.MARKDOWN)
+                if opdrachten2[0].ingeleverd is None:
+                    if opdracht[0] is not None:
+                        opdrachten2[0].ingeleverd = opdracht[0]
+                        self.jh_bot.bot.sendMessage(self.chat_id,'De opdracht is ingeleverd met de titel: [' + opdrachten2[0].titel + ']' +
+                                            '(http://jotihunt.net/bericht/?MID=' + opdrachten2[0].id + ')'+ '\n de inlevertijd was: ' + str(opdrachten2[0].ingeleverd) ,
+                                            parse_mode=telegram.ParseMode.MARKDOWN)
+
     def update_hints(self):
 
         try:
             r = requests.get('http://jotihunt.net/api/1.0/hint')
             r.json()
         except:
-            mockresponse=namedtuple('mockresponse',['status_code'])
+            mockresponse = namedtuple('mockresponse', ['status_code'])
             r = mockresponse(status_code=404)
             r.status_code = 404
-        if r.status_code == 404 or'error' in r.json().keys() and self.errors['hints'] != r.json()['error']:
+        if r.status_code == 404 or 'error' in r.json().keys() and self.errors['hints'] != r.json()['error']:
             hints = []
             self.errors['hints'] = r.json()['error']
             self.jh_bot.bot.sendMessage(self.chat_id,
@@ -203,7 +251,7 @@ class HBUpdates(ScanUpdates):
                      [(0, 'minuten'), (-2, 'minuten'), (1, 'minuten')],
                      [(-2, 'minuten'), None, None]]
         for opdracht in self.opdrachten:
-            if opdracht.id in skip_reminder:
+            if opdracht.id in skip_reminder or opdracht.ingeleverd is not None:
                 return
             for reminder in reminders:
                 if None in reminder:
@@ -211,14 +259,14 @@ class HBUpdates(ScanUpdates):
                         reminder[0] = (opdracht.remaining_time() + 9001, 'seconds')
                         while not reminder[0][0] > opdracht.remaining_time(reminder[0][1]):
                             reminder[0] = (
-                            opdracht.remaining_time() + (random.choice([1, -1]) * random.choice(range(1000))),
-                            'seconds')
+                                opdracht.remaining_time() + (random.choice([1, -1]) * random.choice(range(1000))),
+                                'seconds')
                     if reminder[1] is None:
                         reminder[1] = (opdracht.remaining_time() - 9001, 'seconds')
                         while not reminder[1][0] > opdracht.remaining_time(reminder[1][1]):
                             reminder[1] = (
-                            opdracht.remaining_time() + (random.choice([1, -1]) * random.choice(range(1000))),
-                            'seconds')
+                                opdracht.remaining_time() + (random.choice([1, -1]) * random.choice(range(1000))),
+                                'seconds')
                 if reminder[0][0] > opdracht.remaining_time(reminder[0][1]) and reminder[1][
                     0] < opdracht.remaining_time(reminder[1][1]):
                     d_time = time.time() - opdracht.last_warning
@@ -240,7 +288,7 @@ class HBUpdates(ScanUpdates):
             r = requests.get('http://jotihunt.net/api/1.0/opdracht')
             r.json()
         except:
-            mockresponse=namedtuple('mockresponse', ['status_code'])
+            mockresponse = namedtuple('mockresponse', ['status_code'])
             r = mockresponse(status_code=404)
             r.status_code = 404
         if r.status_code == 404 or 'error' in r.json().keys() and r.json()['error'] != self.errors['opdrachten']:
@@ -271,11 +319,11 @@ class HBUpdates(ScanUpdates):
         try:
             r = requests.get('http://jotihunt.net/api/1.0/nieuws')
         except:
-            mockresponse=namedtuple('mockresponse', ['status_code'])
+            mockresponse = namedtuple('mockresponse', ['status_code'])
             r = mockresponse(status_code=404)
             r.status_code = 404
         if r.status_code == 404 or 'error' in r.json().keys() and self.errors['nieuws'] != r.json()['error']:
-            nieuws= []
+            nieuws = []
             self.errors['nieuws'] = r.json()['error']
             self.jh_bot.bot.sendMessage(self.chat_id,
                                         'De jotihuntsite gaf een error tijdens het binnenhalen van nieuws: ' +
@@ -292,19 +340,18 @@ class HBUpdates(ScanUpdates):
                 self.jh_bot.bot.sendMessage(self.chat_id, 'Er is nieuws met de titel: [' + nieuwst.titel +
                                             '](http://jotihunt.net/bericht/?MID=' + n['ID'] + ')',
                                             parse_mode=telegram.ParseMode.MARKDOWN)
-        # hashed_niewuws = [hash(ni) for ni in self.nieuws]
-        # for n in nieuws:
-        #     temp_n = Nieuws(n['ID'], chat_id=self.chat_id)
-        #     if hash(temp_n) in hashed_niewuws:
-        #
-        #         for ni in self.nieuws:
-
-
+                # hashed_niewuws = [hash(ni) for ni in self.nieuws]
+                # for n in nieuws:
+                #     temp_n = Nieuws(n['ID'], chat_id=self.chat_id)
+                #     if hash(temp_n) in hashed_niewuws:
+                #
+                #         for ni in self.nieuws:
 
     def update(self):
         self.update_hints()
         self.update_nieuws()
         self.update_opdrachten()
+        self.update_opdracht_klaar()
         self.opdracht_reminders()
 
 
@@ -319,15 +366,16 @@ def convert_tijden(waarde, eenheid='seconden'):
         return convert_tijden(waarde * 24, 'uur')
 
 
-
 def command_botan_wrapper(func):
-        @functools.wraps
-        def command_inner(self,*args, **kwargs):
-            r = func(*args, **kwargs)
-            botan.track(token=self.botankey, uid=self.bot.id, message=r)
-        command_inner.__name__ = func.__name__
-        command_inner.__doc__ = func.__doc__
-        return command_inner
+    @functools.wraps
+    def command_inner(self, *args, **kwargs):
+        r = func(*args, **kwargs)
+        botan.track(token=self.botankey, uid=self.bot.id, message=r)
+
+    command_inner.__name__ = func.__name__
+    command_inner.__doc__ = func.__doc__
+    return command_inner
+
 
 class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
     def __init__(self, token=tokens.telegramtoken, reset_old_messages=True,
@@ -386,7 +434,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             logger(command[0])
         except:
             command = ['/error']
-        if command[0] in ['/updates','/u'] and username not in admins:
+        if command[0] in ['/updates', '/u'] and username not in admins:
             return False
         if chat_id < 0:
             if command[0] == '/addme':
@@ -401,8 +449,6 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             elif first_name in known_users:
                 return True
         return False
-
-
 
     @property
     def in_chats_ids(self):
@@ -426,12 +472,12 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         logger(self.in_chats_ids)
 
     def set_old_updates(self):
-            for update in self.bot.getUpdates(self.offset):
-                self.known_updates.add(update.update_id)
-                self.in_chats_ids.add(update.message.chat.id)
-                self.chats.append(Chat(self, update.message.chat.id))
-                self.offset = update.update_id + 1
-                self.number_of_updates += 1
+        for update in self.bot.getUpdates(self.offset):
+            self.known_updates.add(update.update_id)
+            self.in_chats_ids.add(update.message.chat.id)
+            self.chats.append(Chat(self, update.message.chat.id))
+            self.offset = update.update_id + 1
+            self.number_of_updates += 1
 
     def new_command_generator(self):
         for update in self.bot.getUpdates(offset=self.offset):
@@ -451,29 +497,30 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         for id in self.in_chats_ids:
             self.bot.sendLocation(id, lat, lon)
 
-        #if self.groeps_chat is None and command[0] != '/setgroep':
-        #    self.bot.sendMessage(chat_id,
-        #                         "de groepsapp is nog niet ingesteld. Dit kan gedaan worden door /setgroep te typen in de algemene groep van de RP.", reply_to_message_id=update.message.message_id)
-        #if self.groeps_chat is not None and first_name not in self.users_in_groeps_chat:
-        #    if command[0] == '/addme' and chat_id == self.groeps_chat:
-        #        self.users_in_groeps_chat.append(first_name)
-        #        self.bot.sendMessage(chat_id, "je bent toegevoegd in de lijst met bekende gebruikers", reply_to_message_id=update.message.message_id)
-        #        return
-        #    else:
-        #        self.bot.sendMessage(chat_id, "je bent nog niet geverifiërd. dit kun je doen door /addme te typen in de groepsapp van de rp", reply_to_message_id=update.message.message_id)
-        #        return
+            # if self.groeps_chat is None and command[0] != '/setgroep':
+            #    self.bot.sendMessage(chat_id,
+            #                         "de groepsapp is nog niet ingesteld. Dit kan gedaan worden door /setgroep te typen in de algemene groep van de RP.", reply_to_message_id=update.message.message_id)
+            # if self.groeps_chat is not None and first_name not in self.users_in_groeps_chat:
+            #    if command[0] == '/addme' and chat_id == self.groeps_chat:
+            #        self.users_in_groeps_chat.append(first_name)
+            #        self.bot.sendMessage(chat_id, "je bent toegevoegd in de lijst met bekende gebruikers", reply_to_message_id=update.message.message_id)
+            #        return
+            #    else:
+            #        self.bot.sendMessage(chat_id, "je bent nog niet geverifiërd. dit kun je doen door /addme te typen in de groepsapp van de rp", reply_to_message_id=update.message.message_id)
+            #        return
+
     def command_thema(self, update):
         'wat was het thema ook al weer?'
         message, reply_markup = 'This is the default response.', None
         chat_id = utils.get_chat_id(update)
-        api=ma.MickyApi()
-        message=api.get_meta()["THEMA"]
+        api = ma.MickyApi()
+        message = api.get_meta()["THEMA"]
         if reply_markup is None:
             reply_markup = telegram.ReplyKeyboardHide()
         return self.bot.sendMessage(chat_id, str(message),
-                             reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+                                    reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
-    def command_admins(self,update):
+    def command_admins(self, update):
         'laat alle admins zien.'
         message, reply_markup = 'This is the default response.', None
         chat_id = utils.get_chat_id(update)
@@ -503,15 +550,15 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         command = utils.get_command(update)
         username = utils.get_username(update)
         if username not in admins:
-                message = 'Je bent geen admin dus je kunt dit commando niet uitvoeren.'
+            message = 'Je bent geen admin dus je kunt dit commando niet uitvoeren.'
         elif len(command) == 1:
             message = 'Je moet het id van de opdracht meegeven dit is wat achter MID= staat in de url.'
-        elif len (command) == 2:
-            url ='http://jotihunt.net/bericht/?MID=' + str(command[1])
+        elif len(command) == 2:
+            url = 'http://jotihunt.net/bericht/?MID=' + str(command[1])
             try:
                 r = requests.get(url)
             except:
-                mockresponse=namedtuple('mockresponse',['status_code'])
+                mockresponse = namedtuple('mockresponse', ['status_code'])
                 r = mockresponse(status_code=404)
                 r.status_code = 404
             if r.status_code == 200:
@@ -521,14 +568,14 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
                 except:
                     message = str(url) + ' reminders voor deze opdracht werden al gegeven.'
             else:
-                message = url + ' deze link is niet bereikbaar. \n Is ' + str(command[1]) + ' wel een id van een opdracht?'
+                message = url + ' deze link is niet bereikbaar. \n Is ' + str(
+                    command[1]) + ' wel een id van een opdracht?'
         else:
             message = 'te veel argumenten meegegeven.'
         if reply_markup is None:
             reply_markup = telegram.ReplyKeyboardHide()
         return self.bot.sendMessage(chat_id, str(message),
                                     reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
-
 
     def command_opdracht_klaar(self, update):
         'zet reminders voor een oprdracht uit.'
@@ -541,11 +588,11 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         elif len(command) == 1:
             message = 'Je moet het id van de opdracht meegeven dit is wat achter MID= staat in de url.'
         elif len(command) == 2:
-            url ='http://jotihunt.net/bericht/?MID=' + str(command[1])
+            url = 'http://jotihunt.net/bericht/?MID=' + str(command[1])
             try:
                 r = requests.get(url)
             except:
-                mockresponse=namedtuple('mockresponse', ['status_code'])
+                mockresponse = namedtuple('mockresponse', ['status_code'])
                 r = mockresponse(status_code=404)
                 r.status_code = 404
             if r.status_code == 200:
@@ -560,17 +607,16 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         return self.bot.sendMessage(chat_id, str(message),
                                     reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
-
     def command_rp_site(self, update):
         'Een link naar de RP JH site met onder andere de kaart'
         message, reply_markup = 'This is the default response.', None
         chat_id = utils.get_chat_id(update)
-        api=ma.MickyApi()
-        message=api.get_meta()["URL"]
+        api = ma.MickyApi()
+        message = api.get_meta()["URL"]
         if reply_markup is None:
             reply_markup = telegram.ReplyKeyboardHide()
         return self.bot.sendMessage(chat_id, str(message),
-                             reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+                                    reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
     def command_statusinfo(self, update):
         'Geeft informatie over hoevaak een vos offline is geweest. Begint met tellen om 12 uur. de eerste en de huidige status worden ook meegeteld.'
@@ -589,7 +635,8 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
                     status_record = status_records[get_deelgebied(command[1])]
                     message += 'deelgebied =\t' + status_record.deelgebied + '\n'
                     message += 'huidige status =\t' + status_record.huidige_status + '\n'
-                    message += 'tijd sinds laatste verandering =\t' +str(round((time.time() - status_record.laatste_keer_verandering) / 60)) + ' minuten\n'
+                    message += 'tijd sinds laatste verandering =\t' + str(
+                        round((time.time() - status_record.laatste_keer_verandering) / 60)) + ' minuten\n'
                     message += 'status om 12 uur was (wordt ook meegeteld) =' + status_record.eerst_status + '\n'
                     message += 'aantal keer groen=\t' + str(status_record.aantal_keer_groen) + '\n'
                     message += 'aantal keer oranje =\t' + str(status_record.aantal_keer_oranje) + '\n'
@@ -601,11 +648,11 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             else:
                 message = 'argument is geen deelgebied.'
         else:
-            message='teveel argumenten ingevoerd'
+            message = 'teveel argumenten ingevoerd'
         if reply_markup is None:
             reply_markup = telegram.ReplyKeyboardHide()
         return self.bot.sendMessage(chat_id, str(message),
-                             reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+                                    reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
     def command_waaris(self, update):
         'Geeft de laatste bekende locatie terug van een hunter.'
@@ -637,7 +684,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         if reply_markup is None:
             reply_markup = telegram.ReplyKeyboardHide()
         return self.bot.sendMessage(chat_id, str(message),
-                             reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+                                    reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
     def command_status(self, update):
         'Zie de huidige status van alle vossen.'
@@ -654,7 +701,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         if reply_markup is None:
             reply_markup = telegram.ReplyKeyboardHide()
         return self.bot.sendMessage(chat_id, str(message),
-                             reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+                                    reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
 
     def command_del_sticker(self, update):
         'Admins only! Verwijder de sticker die meegezonden wordt tijdens een statusupdate. De updates komen nu alleen binnen via text.'
@@ -689,6 +736,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             reply_markup = telegram.ReplyKeyboardHide()
         self.bot.sendMessage(chat_id, str(message),
                              reply_to_message_id=update.message.message_id, reply_markup=reply_markup)
+
     def command_foto_info(self, update):
         'is nog niet geimplementeerd'
         message, reply_markup = 'This is the default response.', None
@@ -764,9 +812,9 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             f.write('\n')
             f.write('Username: ')
             f.write(username + '\n')
-            f. write('First_name: ')
+            f.write('First_name: ')
             f.write(first_name + '\n')
-            f.write("Uts: " + str(time.time())+'\n')
+            f.write("Uts: " + str(time.time()) + '\n')
             for _ in range(80):
                 f.write('=')
             f.write('\n')
@@ -869,7 +917,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             elif len(command) == 3:
                 if get_deelgebied(command[1]) is None:
                     message = '1e argument moe een deelgebied zijn.'
-                elif command[2] not in ['rood', 'oranje','groen']:
+                elif command[2] not in ['rood', 'oranje', 'groen']:
                     message = '2e argument moet een status zijn.'
                 else:
                     reply_markup = telegram.ReplyKeyboardHide()
@@ -891,13 +939,16 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
                                     if u.message.chat.id == chat_id:
                                         if 'sticker' in u.message.to_dict().keys():
                                             logger(u.message.sticker)
-                                            status_plaatjes[command[1][0].lower()][command[2].lower()]['type'] = 'sticker'
-                                            status_plaatjes[command[1][0].lower()][command[2].lower()]['file_id'] = u.message.sticker.file_id
+                                            status_plaatjes[command[1][0].lower()][command[2].lower()][
+                                                'type'] = 'sticker'
+                                            status_plaatjes[command[1][0].lower()][command[2].lower()][
+                                                'file_id'] = u.message.sticker.file_id
                                             b = False
                                             message = ' Sticker wordt nu verzonden bij een status-update.'
                                         elif 'photo' in u.message.to_dict().keys():
                                             status_plaatjes[command[1][0].lower()][command[2].lower()]['type'] = 'photo'
-                                            status_plaatjes[command[1][0].lower()][command[2].lower()]['file_id'] = u.message.photo[0].file_id
+                                            status_plaatjes[command[1][0].lower()][command[2].lower()]['file_id'] = \
+                                            u.message.photo[0].file_id
                                             b = False
                                             message = ' Foto wordt nu verzonden bij een status-update.'
                                         else:
@@ -912,7 +963,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
 
     def command_scouting_groep_per_dg(self, update):
         'Sorteer scoutinggroep per deelgebied'
-        deelgebied_key_in_api = 'deelgebied' # TODO remove this als micky het geimplementeerd heeft.
+        deelgebied_key_in_api = 'deelgebied'  # TODO remove this als micky het geimplementeerd heeft.
         message, reply_markup = 'This is the default response.', None
         chat_id = utils.get_chat_id(update)
         command = utils.get_command(update)
@@ -922,7 +973,8 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
         scouting_groepen = api.get_all_scouting_groepen()
         if len(command) == 1:
             if chat_id > 0:
-                keyboard = [[x] for x in sorted(set('/scouting_groep_per_dg ' + get_deelgebied(x[deelgebied_key_in_api]) for x in scouting_groepen))]
+                keyboard = [[x] for x in sorted(set(
+                    '/scouting_groep_per_dg ' + get_deelgebied(x[deelgebied_key_in_api]) for x in scouting_groepen))]
                 reply_markup = telegram.ReplyKeyboardMarkup(keyboard)
                 message = "Welke deelgebied?"
             else:
@@ -931,7 +983,8 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             if chat_id > 0:
                 deelgebied = get_deelgebied(command[1])
                 if deelgebied is not None:
-                    groepen_in_deelgebied = [sc for sc in scouting_groepen if get_deelgebied(sc[deelgebied_key_in_api]) == get_deelgebied(command[1])]
+                    groepen_in_deelgebied = [sc for sc in scouting_groepen if
+                                             get_deelgebied(sc[deelgebied_key_in_api]) == get_deelgebied(command[1])]
                     keyboard = [['/scouting_groep ' + x['naam']] for x in groepen_in_deelgebied]
                     reply_markup = telegram.ReplyKeyboardMarkup(keyboard)
                     message = "Welke deelgebied?"
@@ -1003,8 +1056,9 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
                         message += str(u.deelgebied) + '\n'
                     if not l:
                         message += ' geen deelgebieden'
-                elif command[1] in ['aan','uit']:
-                    keyboard = [['/updates ' + str(command[1]) + ' ' + str(x)] for x in ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'HB', 'All']]
+                elif command[1] in ['aan', 'uit']:
+                    keyboard = [['/updates ' + str(command[1]) + ' ' + str(x)] for x in
+                                ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'HB', 'All']]
                     reply_markup = telegram.ReplyKeyboardMarkup(keyboard)
                     message = "voor welk deelgebied wil je updates " + command[1] + ' zetten?'
                 else:
@@ -1013,7 +1067,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
                 message = str(self.add_update(command, chat_id))
         else:
             if 'aan' in command or 'uit' in command:
-                    message = str(self.add_update(command, chat_id))
+                message = str(self.add_update(command, chat_id))
             elif len(command) == 2:
                 if command[1] == 'show':
                     logger([u.to_tuple() for u in known_updates])
@@ -1101,7 +1155,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             if len(command) == 3:
                 if get_deelgebied(command[2]) is not None:
                     if (chat_id, get_deelgebied(command[2])) in u:
-                        return "updates voor " + get_deelgebied(command[2]) +" stonden al aan in deze chat"
+                        return "updates voor " + get_deelgebied(command[2]) + " stonden al aan in deze chat"
                     if command[2] == get_deelgebied('HB'):
                         update_list.append(HBUpdates(self, chat_id, deelgebied=get_deelgebied(command[2])))
                     else:
@@ -1109,7 +1163,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
                     return "updates voor " + get_deelgebied(command[2]) + " staan in deze chat aan"
                 elif get_deelgebied(command[1]) is not None:
                     if (chat_id, get_deelgebied(command[1])) in u:
-                        return "updates voor " + get_deelgebied(command[1]) +" stonden al aan in deze chat"
+                        return "updates voor " + get_deelgebied(command[1]) + " stonden al aan in deze chat"
                     if command[1] == get_deelgebied('HB'):
                         update_list.append(HBUpdates(self, chat_id, deelgebied=get_deelgebied(command[1])))
                     else:
@@ -1152,7 +1206,7 @@ class JotihuntBot(command_handler.CommandHandlerWithHelpAndFather):
             r = requests.get('http://jotihunt.net/api/1.0/vossen')
             r.json()
         except:
-            mockresponse=namedtuple('mockresponse', ['status_code'])
+            mockresponse = namedtuple('mockresponse', ['status_code'])
             r = mockresponse(status_code=404)
             r.status_code = 404
         s = 'deelgebied:\tstatus\n'
@@ -1262,68 +1316,68 @@ def handle_updates(make_threads=True):
         delay = 0
         threads = handle_updates_once(make_threads)
         for k, t in threads.items():
-                        t.start()
-                        logger('update-thread is gestart', k)
+            t.start()
+            logger('update-thread is gestart', k)
         delete_threads = []
         for k, t in threads.items():
-                t.join(timeout=1.5)
-                if not t.isAlive():
-                    logger("update-Thread" + str(k) + " stopped")
-                    delete_threads.append(k)
-                    logger("update-Thread has been queued for deletion: ", k)
-                else:
-                    logger("*** WARNING update-Thread has not stopped: ", k, '***')
+            t.join(timeout=1.5)
+            if not t.isAlive():
+                logger("update-Thread" + str(k) + " stopped")
+                delete_threads.append(k)
+                logger("update-Thread has been queued for deletion: ", k)
+            else:
+                logger("*** WARNING update-Thread has not stopped: ", k, '***')
         for k in delete_threads:
-                del threads[k]
-                logger("update-Thread has been deleted:", k)
+            del threads[k]
+            logger("update-Thread has been deleted:", k)
         if threads:
-                logger('update-threads remaining', threads)
+            logger('update-threads remaining', threads)
 
 
 def run(jh_bot, new_thread=True, first=True, send_exit_message=True, startfrom_error=False, error=None):
-        if first:
-            if new_thread:
-                thread.start_new(jh_bot.run, ())
-                logger('bot-Thread started')
-                thread.start_new(handle_updates, ())
-                logger('update-Thread started')
-                while True:
+    if first:
+        if new_thread:
+            thread.start_new(jh_bot.run, ())
+            logger('bot-Thread started')
+            thread.start_new(handle_updates, ())
+            logger('update-Thread started')
+            while True:
+                update_status_records()
+                time.sleep(60)
+        else:
+            start_time = time.time()
+            update_interval = 60
+            last_update = None
+            while True:
+
+                threads = {}
+                # print(start_time, time.time(), time.time() - start_time, update_interval)
+                if time.time() - start_time > update_interval:
+                    logger('checking also for updates')
+                    logger('n real_threads = ', threading.active_count())
+                    start_time = time.time()
                     update_status_records()
-                    time.sleep(60)
-            else:
-                start_time = time.time()
-                update_interval = 60
-                last_update = None
-                while True:
-
-                    threads = {}
-                    # print(start_time, time.time(), time.time() - start_time, update_interval)
-                    if time.time() - start_time > update_interval:
-                        logger('checking also for updates')
-                        logger('n real_threads = ', threading.active_count())
-                        start_time = time.time()
-                        update_status_records()
-                        for k, v in handle_updates_once(make_threads=False).items():
-                            threads[k] = v
-                        update_interval = time.time() - start_time
-                        if update_interval < 60:
-                            update_interval = 60
-                        logger('new interval =', update_interval)
-                        start_time = time.time()
-                    r = jh_bot.run_once(make_thread=False, last_update_id=last_update)
-                    last_update = r[1]
-                    for k, v in r[0].items():
-                        logger('commando gevonden')
+                    for k, v in handle_updates_once(make_threads=False).items():
                         threads[k] = v
-                    for k, t in threads.items():
-                        logger('starting fakethreat', k)
-                        t.start()
-                        logger('fakethreat done', k)
+                    update_interval = time.time() - start_time
+                    if update_interval < 60:
+                        update_interval = 60
+                    logger('new interval =', update_interval)
+                    start_time = time.time()
+                r = jh_bot.run_once(make_thread=False, last_update_id=last_update)
+                last_update = r[1]
+                for k, v in r[0].items():
+                    logger('commando gevonden')
+                    threads[k] = v
+                for k, t in threads.items():
+                    logger('starting fakethreat', k)
+                    t.start()
+                    logger('fakethreat done', k)
 
-        if send_exit_message and not startfrom_error:
-            bot.send_message_to_all("de bot is gestart")
-        if send_exit_message and startfrom_error:
-            bot.bot.sendMessage(19594180, 'de bot is herstart na een error.\n' + str(error))
+    if send_exit_message and not startfrom_error:
+        bot.send_message_to_all("de bot is gestart")
+    if send_exit_message and startfrom_error:
+        bot.bot.sendMessage(19594180, 'de bot is herstart na een error.\n' + str(error))
 
 
 if __name__ == '__main__':

@@ -101,6 +101,8 @@ class Status:
 class Opdracht(utils.Json):
     def __init__(self, id):
         self.id = id
+        self.ingeleverd = None
+        self.gekregen_punten = None
         try:
             self.result = requests.get('http://jotihunt.net/api/1.0/opdracht/' + str(id))
             self.json = self.result.json()
