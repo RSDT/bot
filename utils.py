@@ -82,3 +82,39 @@ def one_of_in(list_a, list_b):
         if a in list_b:
             return True
     return False
+
+def convert_tijden(waarde, eenheid='seconden'):
+    if eenheid in ['seconden', 's', 'seconds', 'second', 'seconde']:
+        return waarde
+    if eenheid in ['minuten', 'm', 'minutes', 'minuut', 'minute']:
+        return convert_tijden(waarde * 60, 'seconden')
+    if eenheid in ['uur', 'u', 'hour', 'uren', 'hours', 'h']:
+        return convert_tijden(waarde * 60, 'minuten')
+    if eenheid in ['dagen', 'd', 'days', 'dag', 'day']:
+        return convert_tijden(waarde * 24, 'uur')
+
+def to_tuple(update):
+    try:
+        return update.message.chat.id, update.message.text
+    except:
+        return random.choice(range(200)), 'kon geen tuple maken'
+
+
+def get_deelgebied(deelgebied):
+    if one_of_in(['Home', 'Base', 'hb', 'HB', 'hq', 'HQ'], deelgebied):
+        return 'HB'
+    elif one_of_in(['Alpha', 'alpha', 'A'], deelgebied):
+        return 'Alpha'
+    elif one_of_in(['Bravo', 'bravo', 'B'], deelgebied):
+        return 'Bravo'
+    elif one_of_in(['Charlie', 'charlie', 'C'], deelgebied):
+        return 'Charlie'
+    elif one_of_in(['Delta', 'delta', 'D'], deelgebied):
+        return 'Delta'
+    elif one_of_in(['Echo', 'echo', 'E'], deelgebied):
+        return 'Echo'
+    elif one_of_in(['Foxtrot', 'foxtrot', 'F'], deelgebied):
+        return 'Foxtrot'
+    else:
+        return None
+
