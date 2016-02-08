@@ -1,4 +1,5 @@
-from datetime import datetime
+import re
+from datetime import datetime, date
 
 import jotihuntScraper
 import tokens
@@ -145,12 +146,44 @@ class ScanUpdates:
         self.deelgebied = get_deelgebied(deelgebied)
         self.last_update_jh = None
         self.last_update_micky = None
+        self.gecontroleerde_codes = []
+        self.last_hunt = None
         self.micky_api = ma.MickyApi()
 
     def to_tuple(self):
         return self.chat_id, self.deelgebied
 
+    def update_ingevoerd(self):
+        # TODO deze functie testen
+        hunts, labels, pref_label = jotihuntScraper.get_hunts()
+        for h in hunts:
+            if get_deelgebied(h[2][0]) == get_deelgebied(self.deelgebied):
+                p1 =re.compile('\d+e ')
+                dag = p1.findall(h[0])[0][:-2]
+                p2 = re.compile('e \d+\:')
+                uur= p2.findall(h[0])[0][2:-1]
+                p3 = re.compile('\:\d+')
+                minuut= p3.findall(h[0])[0][1:]
+                d= datetime(year=date.today().year,month=10,day=dag,hour=uur,minute=minuut)
+                if self.last_hunt is None:
+                    self.last_hunt = d
+                else:
+                    dd1 = datetime.now().timestamp() - d.timestamp()
+                    dd2 = datetime.now().timestamp() - self.last_hunt.timestamp()
+                    if dd1 < dd2:
+                        self.last_hunt = d
+                if h[3] in ['goedgekeurd','afgekeurd'] and h[2] not in self.gecontroleerde_codes:
+                    self.jh_bot.bot.sendMessage(self.chat_id, 'Voor de hunt '+ str(h[2]) + ' hebben we ' + str(h[-1]) +
+                                                'punten gekregen.')
+                    self.gecontroleerde_codes.append(h[-1])
+
+    def update_hunt_reminder(self):
+        # TODO implement this
+        return
+
     def update(self):
+        self.update_ingevoerd()
+        self.update_hunt_reminder()
         if self.deelgebied != 'All':
             team = self.deelgebied[0].lower()
             temp = self.micky_api.get_last_vos(team)
@@ -209,9 +242,11 @@ class HBUpdates(ScanUpdates):
                 if opdrachten2[0].ingeleverd is None:
                     if opdracht[0] is not None:
                         opdrachten2[0].ingeleverd = opdracht[0]
-                        self.jh_bot.bot.sendMessage(self.chat_id,'De opdracht is ingeleverd met de titel: [' + opdrachten2[0].titel + ']' +
-                                            '(http://jotihunt.net/bericht/?MID=' + opdrachten2[0].id + ')'+ '\n de inlevertijd was: ' + str(opdrachten2[0].ingeleverd) ,
-                                            parse_mode=telegram.ParseMode.MARKDOWN)
+                        self.jh_bot.bot.sendMessage(self.chat_id, 'De opdracht is ingeleverd met de titel: [' +
+                                                    opdrachten2[0].titel + ']' + '(http://jotihunt.net/bericht/?MID=' +
+                                                    opdrachten2[0].id + ')' + '\n de inlevertijd was: ' +
+                                                    str(opdrachten2[0].ingeleverd),
+                                                    parse_mode=telegram.ParseMode.MARKDOWN)
 
     def update_hints(self):
 
